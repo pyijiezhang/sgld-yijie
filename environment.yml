@@ -1,3 +1,4 @@
+name: sgld
 channels:
   - conda-forge
   - anaconda
