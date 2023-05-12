@@ -323,6 +323,7 @@ def main(
     prior_scale=1,
     augment=True,
     replacement=False,
+    perm=False,
     noise=0.1,
     likelihood="softmax",
     likelihood_temp=1,
@@ -379,7 +380,7 @@ def main(
         )
     elif dataset == "mnist":
         train_data, test_data = get_mnist(
-            root=data_dir, augment=bool(augment), label_noise=label_noise
+            root=data_dir, augment=bool(augment), label_noise=label_noise, perm=perm
         )
     else:
         raise NotImplementedError
