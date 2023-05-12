@@ -61,6 +61,22 @@ _MNIST_TEST_TRANSFORM = transforms.Compose(
     ]
 )
 
+rng_permute = np.random.RandomState(1)
+idx_permute = torch.from_numpy(rng_permute.permutation(784))
+
+
+def _my_permute(x):
+    return x.view(-1)[idx_permute].view(1, 28, 28)
+
+
+_MNIST_TRAIN_TRANSFORM_PERM = transforms.Compose(
+    [
+        transforms.ToTensor(),
+        transforms.Normalize((0.1307,), (0.3081,)),
+        transforms.Lambda(_my_permute),
+    ]
+)
+
 
 # this and AugMixDataset copied from https://github.com/google-research/augmix/blob/master/cifar.py
 def aug(image, preprocess, mixture_width=3, mixture_depth=1, aug_severity=3):
@@ -318,7 +334,9 @@ def get_cifar10(root=None, label_noise=0, augment=True, n_aug=1, return_orig=Fal
     return train_data, test_data
 
 
-def get_mnist(root=None, label_noise=0, augment=True, n_aug=1, return_orig=False):
+def get_mnist(
+    root=None, label_noise=0, augment=True, n_aug=1, return_orig=False, perm=False
+):
     if augment:
         train_data = MNIST(
             root=root, train=True, download=True, transform=_MNIST_TRAIN_TRANSFORM
@@ -326,6 +344,10 @@ def get_mnist(root=None, label_noise=0, augment=True, n_aug=1, return_orig=False
     else:
         train_data = MNIST(
             root=root, train=True, download=True, transform=_MNIST_TEST_TRANSFORM
+        )
+    if perm:
+        train_data = MNIST(
+            root=root, train=True, download=True, transform=_MNIST_TRAIN_TRANSFORM_PERM
         )
     if label_noise > 0:
         train_data = LabelNoiseDataset(train_data, n_labels=10, label_noise=label_noise)
