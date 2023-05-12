@@ -322,6 +322,7 @@ def main(
     dirty_lik=True,
     prior_scale=1,
     augment=True,
+    replacement=False,
     noise=0.1,
     likelihood="softmax",
     likelihood_temp=1,
@@ -386,10 +387,26 @@ def main(
     if type(augment) is not bool and augment != "true":
         train_data = prepare_transforms(augment=augment, train_data=train_data)
         # train_data.transform = prepare_transforms(augment=augment)
-    train_loader = DataLoader(
-        train_data, batch_size=batch_size, num_workers=2, shuffle=True
-    )
-    test_loader = DataLoader(test_data, batch_size=batch_size, num_workers=2)
+    else:
+        train_loader = DataLoader(
+            train_data, batch_size=batch_size, num_workers=2, shuffle=True
+        )
+        test_loader = DataLoader(test_data, batch_size=batch_size, num_workers=2)
+    if replacement:
+        from torch.utils.data import RandomSampler
+        from torch.utils.data import Subset
+        import numpy as np
+
+        np.random.seed(0)
+        n_train = train_data.train_labels.shape[0]
+        idx = np.random.choice(
+            np.arange(0, n_train, 1), int(n_train * 0.05), replace=False
+        )
+        subset_train = Subset(train_data, idx)
+        sampler = RandomSampler(subset_train, replacement=True, num_samples=n_train)
+        train_loader = DataLoader(
+            subset_train, batch_size=batch_size, num_workers=2, sampler=sampler
+        )
 
     if dirty_lik is True or dirty_lik == "std":
         net = ResNet18(num_classes=train_data.total_classes).to(device)
