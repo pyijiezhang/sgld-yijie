@@ -252,8 +252,17 @@ def run_csgld(
 
     for e in tqdm(range(epochs)):
         net.train()
+
+        if e == 0:
+            all_X = []
+            all_Y = []
+
         for i, (X, Y) in tqdm(enumerate(train_loader), leave=False):
             X, Y = X.to(device), Y.to(device)
+
+            if e == 0:
+                all_X.append(X)
+                all_Y.append(Y)
 
             sgld.zero_grad()
 
@@ -295,6 +304,15 @@ def run_csgld(
                     "mini_loss": loss.detach().item(),
                 }
                 wandb.log({f"csgld/train/{k}": v for k, v in metrics.items()}, step=e)
+
+        if e == 0:
+            all_X = torch.cat(all_X)
+            all_Y = torch.cat(all_Y)
+            print(all_X.shape)
+            print(all_Y.shape)
+
+            torch.save(all_X, "X_train.pt")
+            torch.save(all_Y, "Y_train.pt")
 
         test_metrics = test(test_loader, net, criterion, device=device)
 
