@@ -96,6 +96,23 @@ def test_bma(net, data_loader, samples_dir, nll_criterion=None, device=None):
     return {"acc": acc, "nll": nll, "ce_nll": ce_nll}
 
 
+@torch.no_grad()
+def get_log_p(data_loader, net, device=None):
+    net.eval()
+
+    all_logits = []
+    all_Y = []
+    for X, Y in tqdm(data_loader, leave=False):
+        X, Y = X.to(device), Y.to(device)
+        _logits = net(X)
+        all_logits.append(_logits)
+        all_Y.append(Y)
+    all_logits = torch.cat(all_logits)
+    all_Y = torch.cat(all_Y)
+    log_p = -torch.distributions.Categorical(logits=all_logits).log_prob(all_Y)
+    return log_p
+
+
 def run_sgd(
     train_loader,
     test_loader,
@@ -233,6 +250,7 @@ def run_csgld(
     net,
     criterion,
     samples_dir,
+    log_p_dir,
     device=None,
     lr=1e-2,
     momentum=0.9,
@@ -253,16 +271,8 @@ def run_csgld(
     for e in tqdm(range(epochs)):
         net.train()
 
-        if e == 0:
-            all_X = []
-            all_Y = []
-
         for i, (X, Y) in tqdm(enumerate(train_loader), leave=False):
             X, Y = X.to(device), Y.to(device)
-
-            if e == 0:
-                all_X.append(X)
-                all_Y.append(Y)
 
             sgld.zero_grad()
 
@@ -280,54 +290,31 @@ def run_csgld(
                     torch.save(net.state_dict(), samples_dir / f"s_e{e}_m{i}.pt")
                     wandb.save("samples/*.pt")
 
-                    bma_test_metrics = test_bma(
-                        net,
-                        test_loader,
-                        samples_dir,
-                        nll_criterion=nll_criterion,
-                        device=device,
-                    )
-                    wandb.log(
-                        {f"csgld/test/bma_{k}": v for k, v in bma_test_metrics.items()}
-                    )
-
-                    logging.info(
-                        f"cSGLD BMA (Epoch {e}): {bma_test_metrics['acc']:.4f}"
-                    )
+                    log_p_train = get_log_p(train_loader, net, device=device)
+                    log_p_test = get_log_p(test_loader, net, device=device)
+                    torch.save(log_p_train, log_p_dir / f"log_p_train_e{e}.pt")
+                    torch.save(log_p_test, log_p_dir / f"log_p_test_e{e}.pt")
 
             sgld_scheduler.step()
 
-            if i % 50 == 0:
-                metrics = {
-                    "epoch": e,
-                    "mini_idx": i,
-                    "mini_loss": loss.detach().item(),
-                }
-                wandb.log({f"csgld/train/{k}": v for k, v in metrics.items()}, step=e)
+        # log_p_train = get_log_p(train_loader, net, device=device)
+        log_p_test = get_log_p(test_loader, net, device=device)
+        # nll_train = log_p_train.mean().numpy()
+        nll_test = log_p_test.mean().numpy()
 
-        if e == 0:
-            all_X = torch.cat(all_X)
-            all_Y = torch.cat(all_Y)
-            print(all_X.shape)
-            print(all_Y.shape)
+        # logging.info(
+        #     f"cSGLD (Epoch {e}) : train nll {nll_train:.4f}, test nll {nll_test:.4f}"
+        # )
+        logging.info(f"cSGLD (Epoch {e}) : test nll {nll_test:.4f}")
 
-            torch.save(all_X, "X_train.pt")
-            torch.save(all_Y, "Y_train.pt")
+    # bma_test_metrics = test_bma(
+    #     net, test_loader, samples_dir, nll_criterion=nll_criterion, device=device
+    # )
 
-        test_metrics = test(test_loader, net, criterion, device=device)
+    # wandb.log({f"csgld/test/bma_{k}": v for k, v in bma_test_metrics.items()})
+    # wandb.run.summary["csgld/test/bma_acc"] = bma_test_metrics["acc"]
 
-        wandb.log({f"csgld/test/{k}": v for k, v in test_metrics.items()}, step=e)
-
-        logging.info(f"cSGLD (Epoch {e}) : {test_metrics['acc']:.4f}")
-
-    bma_test_metrics = test_bma(
-        net, test_loader, samples_dir, nll_criterion=nll_criterion, device=device
-    )
-
-    wandb.log({f"csgld/test/bma_{k}": v for k, v in bma_test_metrics.items()})
-    wandb.run.summary["csgld/test/bma_acc"] = bma_test_metrics["acc"]
-
-    logging.info(f"cSGLD BMA: {wandb.run.summary['csgld/test/bma_acc']:.4f}")
+    # logging.info(f"cSGLD BMA: {wandb.run.summary['csgld/test/bma_acc']:.4f}")
 
 
 def main(
@@ -387,7 +374,9 @@ def main(
     )
 
     samples_dir = Path(wandb.run.dir) / "samples"
+    log_p_dir = Path(wandb.run.dir) / "log_p"
     samples_dir.mkdir()
+    log_p_dir.mkdir()
 
     if dataset == "tiny-imagenet":
         train_data, test_data = get_tiny_imagenet(
@@ -503,6 +492,7 @@ def main(
                 net,
                 criterion,
                 samples_dir,
+                log_p_dir,
                 device=device,
                 lr=sgld_lr,
                 momentum=momentum,
