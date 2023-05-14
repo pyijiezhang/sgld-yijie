@@ -407,7 +407,7 @@ def main(
         import numpy as np
 
         np.random.seed(0)
-        n_train = train_data.train_labels.shape[0]
+        n_train = train_data.targets.shape[0]
         idx = np.random.choice(
             np.arange(0, n_train, 1), int(n_train * 0.05), replace=False
         )
@@ -422,10 +422,10 @@ def main(
         import numpy as np
 
         np.random.seed(0)
-        n_train = train_data.train_labels.shape[0]
+        n_train = train_data.targets.shape[0]
         idx = np.random.choice(np.arange(0, n_train, 1), 100, replace=False)
         subset_train = Subset(train_data, idx)
-        sampler = RandomSampler(subset_train, replacement=False, num_samples=n_train)
+        sampler = RandomSampler(subset_train, replacement=False, num_samples=100)
         train_loader = DataLoader(
             subset_train, batch_size=batch_size, num_workers=2, sampler=sampler
         )
