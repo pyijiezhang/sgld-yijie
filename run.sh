@@ -59,6 +59,28 @@ for T in ${Ts[*]}; do
         --sgld-lr=1e-6 \
         --momentum=0.99 \
         --n-samples=4 \
+<<<<<<< HEAD
+=======
+        --n_cycles=4 & 
+
+    python experiments/train_lik.py --temperature=$T \
+        --augment=False \
+        --replacement=False \
+        --perm=False \
+        --seed=15 \
+        --dataset="mnist" \
+        --data_dir="mnist" \
+        --dirty_lik="lenet" \
+        --likelihood="softmax" \
+        --label_noise=0.0 \
+        --logits_temp=1.0 \
+        --noise=0.0 \
+        --prior-scale=1.0 \
+        --sgld-epochs=20 \
+        --sgld-lr=1e-6 \
+        --momentum=0.99 \
+        --n-samples=4 \
+>>>>>>> parent of aa4460f... run.sh
         --n_cycles=4 &     
     wait
 done
