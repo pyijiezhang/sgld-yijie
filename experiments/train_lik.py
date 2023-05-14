@@ -11,6 +11,7 @@ from data_aug.optim import SGLD
 from data_aug.optim.lr_scheduler import CosineLR
 from data_aug.utils import set_seeds
 from data_aug.models import ResNet18, ResNet18FRN, ResNet18Fixup, LeNet
+from data_aug.models.mlp import MLP
 from data_aug.datasets import (
     get_cifar10,
     get_mnist,
@@ -408,7 +409,19 @@ def main(
         train_loader = DataLoader(
             subset_train, batch_size=batch_size, num_workers=2, sampler=sampler
         )
+    if dirty_lik == "mlp":
+        from torch.utils.data import RandomSampler
+        from torch.utils.data import Subset
+        import numpy as np
 
+        np.random.seed(0)
+        n_train = train_data.train_labels.shape[0]
+        idx = np.random.choice(np.arange(0, n_train, 1), 100, replace=False)
+        subset_train = Subset(train_data, idx)
+        sampler = RandomSampler(subset_train, replacement=False, num_samples=n_train)
+        train_loader = DataLoader(
+            subset_train, batch_size=batch_size, num_workers=2, sampler=sampler
+        )
     if dirty_lik is True or dirty_lik == "std":
         net = ResNet18(num_classes=train_data.total_classes).to(device)
     elif dirty_lik is False or dirty_lik == "frn":
@@ -417,6 +430,8 @@ def main(
         net = ResNet18Fixup(num_classes=train_data.total_classes).to(device)
     elif dirty_lik == "lenet":
         net = LeNet(num_classes=train_data.total_classes).to(device)
+    elif dirty_lik == "mlp":
+        net = MLP(num_classes=train_data.total_classes).to(device)
 
     # print(net)
 
