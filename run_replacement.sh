@@ -22,4 +22,5 @@ for T in ${Ts[*]}; do
         --momentum=0.99 \
         --n-samples=10 \
         --n_cycles=10 & 
+wait
 done 
