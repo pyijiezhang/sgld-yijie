@@ -97,7 +97,7 @@ def test_bma(net, data_loader, samples_dir, nll_criterion=None, device=None):
 
 
 @torch.no_grad()
-def get_log_p(data_loader, net, device=None):
+def get_log_p(data_loader, net, logits_temp, device=None):
     net.eval()
 
     all_logits = []
@@ -108,6 +108,7 @@ def get_log_p(data_loader, net, device=None):
         all_logits.append(_logits)
         all_Y.append(Y)
     all_logits = torch.cat(all_logits)
+    all_logits /= logits_temp
     all_Y = torch.cat(all_Y)
     log_p = torch.distributions.Categorical(logits=all_logits).log_prob(all_Y)
     return log_p
@@ -255,6 +256,7 @@ def run_csgld(
     lr=1e-2,
     momentum=0.9,
     temperature=1,
+    logits_temp=1.0,
     n_samples=20,
     n_cycles=1,
     epochs=1,
@@ -290,15 +292,17 @@ def run_csgld(
                     torch.save(net.state_dict(), samples_dir / f"s_e{e}_m{i}.pt")
                     wandb.save("samples/*.pt")
 
-                    log_p_train = get_log_p(train_loader, net, device=device)
-                    log_p_test = get_log_p(test_loader, net, device=device)
+                    log_p_train = get_log_p(
+                        train_loader, net, logits_temp, device=device
+                    )
+                    log_p_test = get_log_p(test_loader, net, logits_temp, device=device)
                     torch.save(log_p_train, log_p_dir / f"log_p_train_e{e}.pt")
                     torch.save(log_p_test, log_p_dir / f"log_p_test_e{e}.pt")
 
             sgld_scheduler.step()
 
         # log_p_train = get_log_p(train_loader, net, device=device)
-        log_p_test = get_log_p(test_loader, net, device=device)
+        log_p_test = get_log_p(test_loader, net, logits_temp, device=device)
         # nll_train = log_p_train.mean().item()
         nll_test = log_p_test.mean().item()
 
@@ -497,6 +501,7 @@ def main(
                 lr=sgld_lr,
                 momentum=momentum,
                 temperature=temperature,
+                logits_temp=logits_temp,
                 n_samples=n_samples,
                 n_cycles=n_cycles,
                 epochs=sgld_epochs,
