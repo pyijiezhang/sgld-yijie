@@ -304,7 +304,7 @@ def run_csgld(
         # log_p_train = get_log_p(train_loader, net, device=device)
         log_p_test = get_log_p(test_loader, net, logits_temp, device=device)
         # nll_train = log_p_train.mean().item()
-        nll_test = log_p_test.mean().item()
+        nll_test = -log_p_test.mean().item()
 
         # logging.info(
         #     f"cSGLD (Epoch {e}) : train nll {nll_train:.4f}, test nll {nll_test:.4f}"
