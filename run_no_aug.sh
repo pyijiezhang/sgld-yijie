@@ -16,7 +16,7 @@ for T in ${Ts[*]}; do
         --label_noise=0.0 \
         --logits_temp=1.0 \
         --noise=0.0 \
-        --prior-scale=0.001 \
+        --prior-scale=0.01 \
         --sgld-epochs=100 \
         --sgld-lr=1e-6 \
         --momentum=0.99 \
@@ -35,7 +35,7 @@ for T in ${Ts[*]}; do
         --label_noise=0.0 \
         --logits_temp=0.5 \
         --noise=0.0 \
-        --prior-scale=0.001 \
+        --prior-scale=0.01 \
         --sgld-epochs=100 \
         --sgld-lr=1e-6 \
         --momentum=0.99 \
@@ -54,7 +54,7 @@ for T in ${Ts[*]}; do
         --label_noise=0.0 \
         --logits_temp=0.2 \
         --noise=0.0 \
-        --prior-scale=0.001 \
+        --prior-scale=0.01 \
         --sgld-epochs=100 \
         --sgld-lr=1e-6 \
         --momentum=0.99 \
