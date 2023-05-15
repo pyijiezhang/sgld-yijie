@@ -109,7 +109,7 @@ def get_log_p(data_loader, net, device=None):
         all_Y.append(Y)
     all_logits = torch.cat(all_logits)
     all_Y = torch.cat(all_Y)
-    log_p = -torch.distributions.Categorical(logits=all_logits).log_prob(all_Y)
+    log_p = torch.distributions.Categorical(logits=all_logits).log_prob(all_Y)
     return log_p
 
 
@@ -409,7 +409,7 @@ def main(
         np.random.seed(0)
         n_train = train_data.targets.shape[0]
         idx = np.random.choice(
-            np.arange(0, n_train, 1), int(n_train * 0.05), replace=False
+            np.arange(0, n_train, 1), int(n_train * 0.01), replace=False
         )
         subset_train = Subset(train_data, idx)
         sampler = RandomSampler(subset_train, replacement=True, num_samples=n_train)
@@ -423,7 +423,7 @@ def main(
 
         np.random.seed(0)
         n_train = train_data.targets.shape[0]
-        idx = np.random.choice(np.arange(0, n_train, 1), 100, replace=False)
+        idx = np.random.choice(np.arange(0, n_train, 1), 500, replace=False)
         subset_train = Subset(train_data, idx)
         sampler = RandomSampler(subset_train, replacement=False, num_samples=100)
         train_loader = DataLoader(
