@@ -429,10 +429,11 @@ def main(
         n_train = train_data.targets.shape[0]
         idx = np.random.choice(np.arange(0, n_train, 1), 500, replace=False)
         subset_train = Subset(train_data, idx)
-        sampler = RandomSampler(subset_train, replacement=False, num_samples=6000)
+        sampler = RandomSampler(subset_train, replacement=False, num_samples=100)
         train_loader = DataLoader(
             subset_train, batch_size=batch_size, num_workers=2, sampler=sampler
         )
+        logits_temp = 0.1
     if dirty_lik is True or dirty_lik == "std":
         net = ResNet18(num_classes=train_data.total_classes).to(device)
     elif dirty_lik is False or dirty_lik == "frn":
